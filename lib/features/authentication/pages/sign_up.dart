@@ -6,6 +6,7 @@ import 'package:note_app/features/authentication/state_management/sign_up_cubit.
 
 import '../models/signup_request.dart';
 import 'login.dart';
+import 'otp_view.dart';
 
 
 // First, create the StatefulWidget class for RegistrationPage
@@ -26,8 +27,8 @@ class _RegistrationPageState extends State<RegistrationPage> {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-  create: (context) => SignUpCubit(UserRepository()),//// Inject UserRepository
-  child: Scaffold(
+      create: (context) => SignUpCubit(UserRepository()), // Inject UserRepository
+      child: Scaffold(
         backgroundColor: Colors.white,
         body: Stack(
           children: [
@@ -39,66 +40,76 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
             ),
             SafeArea(
-              child: BlocListener<SignUpCubit, SignUpState>(
-  listener: (context, state) {
-    // TODO: implement listener
-    if (state is SignUpLoading) {
-      // Show loading indicator
-      showDialog(
-        context: context,
-        builder: (context) => Center(child: CircularProgressIndicator()),
-        barrierDismissible: false,
-      );
-    } else if (state is SignUpSuccess) {
-      // Close loading indicator
-      Navigator.pop(context);
-
-      // Navigate to OTP screen or show success message
-      Navigator.pushReplacementNamed(context, '/otp_view', arguments: _emailController.text);
-    } else if (state is SignUpError) {
-      // Close loading indicator
-      Navigator.pop(context);
-
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.errorMessage)));
-    }
-  },
-  child: LayoutBuilder(
-                builder: (context, constraints) {
-                  double widthFactor = constraints.maxWidth > 600 ? 0.4 : 0.8;
-                  double contentWidth = MediaQuery.of(context).size.width * widthFactor;
-
-                  return SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.all(20),
-                      child: Center(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(height: 30),
-                            _buildHeader(),
-                            SizedBox(height: 30),
-                            _buildFields(context, contentWidth), // Using contentWidth
-                            SizedBox(height: 10),
-                            _buildRememberMeAndForgotPassword(context, contentWidth),
-                            SizedBox(height: 20),
-                            _buildSignUpButton(contentWidth),
-                            SizedBox(height: 20),
-                            _buildLoginLink(contentWidth),
-                          ],
+              child: BlocConsumer<SignUpCubit, SignUpState>(
+                listener: (context, state) {
+                  if (state is SignUpLoading) {
+                    print('loading state');
+                    // Show loading indicator
+                    showDialog(
+                      context: context,
+                      builder: (context) => Center(child: CircularProgressIndicator()),
+                      barrierDismissible: false,
+                    );
+                  } else if (state is SignUpSuccess) {
+                    print('Navigating to OTPView...');
+                    // Navigate to OTP screen or show success message
+                    Future.delayed(Duration.zero, () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => OTPView(email: _emailController.text),
                         ),
-                      ),
-                    ),
-                  );
+                      );
+                    });
+                  } else if (state is SignUpError) {
+                    // Close loading indicator
+                    Navigator.pop(context);
+                    // Show error message
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.errorMessage)));
+                  }
+                },
+                builder: (context, state) {
+                  if (state is SignUpLoading) {
+                    return Center(child: CircularProgressIndicator()); // Display loading indicator in UI
+                  } else {
+                    // If not loading, show the registration form
+                    return LayoutBuilder(
+                      builder: (context, constraints) {
+                        double widthFactor = constraints.maxWidth > 600 ? 0.4 : 0.8;
+                        double contentWidth = MediaQuery.of(context).size.width * widthFactor;
+
+                        return SingleChildScrollView(
+                          child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Center(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  SizedBox(height: 30),
+                                  _buildHeader(),
+                                  SizedBox(height: 30),
+                                  _buildFields(context, contentWidth), // Using contentWidth
+                                  SizedBox(height: 10),
+                                  _buildRememberMeAndForgotPassword(context, contentWidth),
+                                  SizedBox(height: 20),
+                                  _buildSignUpButton(context, contentWidth),
+                                  SizedBox(height: 20),
+                                  _buildLoginLink(contentWidth),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  }
                 },
               ),
-),
             ),
           ],
         ),
       ),
-);
-
+    );
   }
 
   // Build header function
@@ -226,7 +237,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
     );
   }
 
-  Widget _buildSignUpButton(double contentWidth) {
+  Widget _buildSignUpButton(BuildContext context, double contentWidth) {
     return Container(
       width: contentWidth,
       child: SizedBox(
@@ -243,7 +254,6 @@ class _RegistrationPageState extends State<RegistrationPage> {
             // Debugging: Log the user input data
             print('Sign Up button pressed');
 
-
             // Fetch user input data
             if (_validateForm()) {
               // Trigger the sign-up process using Cubit
@@ -253,19 +263,15 @@ class _RegistrationPageState extends State<RegistrationPage> {
                 email: _emailController.text,
                 password: _passwordController.text,
               );
+
               print('first name:${signUpRequest.firstName}');
               print('last name:${signUpRequest.lastName}');
               print('email:${signUpRequest.email}');
               print('pass:${signUpRequest.password}');
 
               // Dispatch the sign-up event
-
-                context.read<SignUpCubit>().SignUp(signUpRequest);
-
-
+              context.read<SignUpCubit>().SignUp(signUpRequest);
             }
-
-
           },
           child: Text('SIGN UP', style: TextStyle(fontSize: 18, color: Colors.purple)),
         ),
@@ -293,6 +299,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       ),
     );
   }
+
   bool _validateForm() {
     if (_passwordController.text != _confirmPasswordController.text) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Passwords do not match')));
@@ -303,7 +310,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
         _lastNameController.text.isEmpty ||
         _emailController.text.isEmpty ||
         _passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please fill all fields')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please fill out all fields')));
       return false;
     }
 

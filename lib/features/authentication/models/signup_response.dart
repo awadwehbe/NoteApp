@@ -1,6 +1,6 @@
 class SignupResponseModel {
-  final int statusCode;
-  final String message;
+  final int? statusCode;
+  final String? message;
   final SignupUserData? data;
 
   SignupResponseModel({

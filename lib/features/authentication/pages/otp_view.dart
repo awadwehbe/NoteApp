@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_app/features/authentication/repository/otp_repository.dart';
 
+import '../models/otp_request.dart';
+import '../state_management/otp_cubit.dart';
+import 'home.dart';
 import 'otp_input.dart';
 
 
@@ -22,19 +26,49 @@ class _OTPViewState extends State<OTPView> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return  SafeArea(
-          child: Scaffold(
-            backgroundColor: Colors.white,
-            body: SingleChildScrollView(
-              child: otpBodySection(
-                MediaQuery.of(context).size.height,
-                MediaQuery.of(context).size.width,
+    return BlocProvider(
+      create: (context) => OtpCubit(OtpRepository()),
+
+      child: BlocConsumer<OtpCubit, OtpState>(
+        listener: (context, state) {
+          if (state is OtpSuccess) {
+            // Navigate to the next screen or show a success message
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => Home(),
+              ),
+            );
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('OTP verification successful!')),
+            );
+          } else if (state is OtpError) {
+            setState(() {
+              _errorMessage = state.errorMessage;
+            });
+          } else if (state is SignUpLoading) {
+            // Show loading indicator or any UI changes for loading
+            setState(() {
+              _errorMessage = "Verifying OTP...";
+            });
+          }
+        },
+        builder: (context, state) {
+          return SafeArea(
+            child: Scaffold(
+              backgroundColor: Colors.white,
+              body: SingleChildScrollView(
+                child: otpBodySection(
+                  screenHeight,
+                  screenWidth,
+                ),
               ),
             ),
-          ),
-        );
-
+          );
+        },
+      ),
+    );
   }
+
   SingleChildScrollView otpBodySection(double screenHeight, double screenWidth) {
     return SingleChildScrollView(
       child: Container(
@@ -80,17 +114,20 @@ class _OTPViewState extends State<OTPView> {
     );
   }
 
-  void _onOtpCompleted(String otp) {
+  void _onOtpCompleted(String otp) async {
     setState(() {
       _enteredOtp = otp; // Update local OTP variable
     });
-
   }
 
   Widget VerifyButton({required double screenHeight, required double screenWidth}) {
     return ElevatedButton(
       onPressed: () {
-
+        final otpRequest = OtpRequestModel(
+          email: widget.email,
+          code: _enteredOtp,
+        );
+        context.read<OtpCubit>().Otpval(otpRequest); // Trigger OTP verification
       },
       child: Text("Verify"),
     );
