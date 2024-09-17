@@ -1,4 +1,3 @@
-/// General Response Model to handle API responses
 class ResponseModel<T> {
   final int statusCode;
   final String message;
@@ -10,16 +9,21 @@ class ResponseModel<T> {
     this.data,
   });
 
-  /// Factory method that accepts only one argument (when no custom `createData` is needed)
-  factory ResponseModel.fromJson(Map<String, dynamic> json) {
+  /// Factory method to create a ResponseModel from JSON with optional custom data parsing
+  factory ResponseModel.fromJson(
+      Map<String, dynamic> json, {
+        T Function(Map<String, dynamic>)? createData,
+      }) {
     return ResponseModel<T>(
       statusCode: json['statusCode'],
       message: json['message'],
-      data: json['data'] != null ? json['data'] as T : null, // Generic data
+      data: (json['data'] != null && createData != null)
+          ? createData(json['data'])
+          : json['data'] as T?,
     );
   }
 
-  /// Factory method that accepts a second argument `createData` for parsing specific types
+  /// Factory method to create a ResponseModel from JSON with required custom data parsing
   factory ResponseModel.fromJsonWithData(
       Map<String, dynamic> json,
       T Function(Map<String, dynamic>) createData,
@@ -30,4 +34,14 @@ class ResponseModel<T> {
       data: json['data'] != null ? createData(json['data']) : null,
     );
   }
+
+  /// Converts the ResponseModel into a JSON-compatible map
+  Map<String, dynamic> toJson({Map<String, dynamic> Function(T)? dataToJson}) {
+    return {
+      'statusCode': statusCode,
+      'message': message,
+      'data': data != null && dataToJson != null ? dataToJson(data!) : data,
+    };
+  }
 }
+

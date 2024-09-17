@@ -1,7 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:note_app/features/authentication/repository/signUp_repository.dart';
+import 'package:note_app/features/authentication/state_management/sign_up_cubit.dart';
 
+import '../models/signup_request.dart';
 import 'login.dart';
 
 
@@ -22,7 +25,9 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return BlocProvider(
+  create: (context) => SignUpCubit(UserRepository()),//// Inject UserRepository
+  child: Scaffold(
         backgroundColor: Colors.white,
         body: Stack(
           children: [
@@ -34,7 +39,31 @@ class _RegistrationPageState extends State<RegistrationPage> {
               ),
             ),
             SafeArea(
-              child: LayoutBuilder(
+              child: BlocListener<SignUpCubit, SignUpState>(
+  listener: (context, state) {
+    // TODO: implement listener
+    if (state is SignUpLoading) {
+      // Show loading indicator
+      showDialog(
+        context: context,
+        builder: (context) => Center(child: CircularProgressIndicator()),
+        barrierDismissible: false,
+      );
+    } else if (state is SignUpSuccess) {
+      // Close loading indicator
+      Navigator.pop(context);
+
+      // Navigate to OTP screen or show success message
+      Navigator.pushReplacementNamed(context, '/otp_view', arguments: _emailController.text);
+    } else if (state is SignUpError) {
+      // Close loading indicator
+      Navigator.pop(context);
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.errorMessage)));
+    }
+  },
+  child: LayoutBuilder(
                 builder: (context, constraints) {
                   double widthFactor = constraints.maxWidth > 600 ? 0.4 : 0.8;
                   double contentWidth = MediaQuery.of(context).size.width * widthFactor;
@@ -63,10 +92,12 @@ class _RegistrationPageState extends State<RegistrationPage> {
                   );
                 },
               ),
+),
             ),
           ],
         ),
-      );
+      ),
+);
 
   }
 
@@ -214,9 +245,26 @@ class _RegistrationPageState extends State<RegistrationPage> {
 
 
             // Fetch user input data
+            if (_validateForm()) {
+              // Trigger the sign-up process using Cubit
+              final signUpRequest = SignupRequestModel(
+                firstName: _firstNameController.text,
+                lastName: _lastNameController.text,
+                email: _emailController.text,
+                password: _passwordController.text,
+              );
+              print('first name:${signUpRequest.firstName}');
+              print('last name:${signUpRequest.lastName}');
+              print('email:${signUpRequest.email}');
+              print('pass:${signUpRequest.password}');
+
+              // Dispatch the sign-up event
+
+                context.read<SignUpCubit>().SignUp(signUpRequest);
 
 
-            // Debugging: Log the user data
+            }
+
 
           },
           child: Text('SIGN UP', style: TextStyle(fontSize: 18, color: Colors.purple)),
@@ -244,5 +292,21 @@ class _RegistrationPageState extends State<RegistrationPage> {
         ],
       ),
     );
+  }
+  bool _validateForm() {
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Passwords do not match')));
+      return false;
+    }
+
+    if (_firstNameController.text.isEmpty ||
+        _lastNameController.text.isEmpty ||
+        _emailController.text.isEmpty ||
+        _passwordController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Please fill all fields')));
+      return false;
+    }
+
+    return true;
   }
 }
