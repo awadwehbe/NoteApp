@@ -23,8 +23,8 @@ class User {
 
 class LoginResponseModel {
   final User user;
-  final String accessToken;
-  final String refreshToken;
+  final String? accessToken;
+  final String? refreshToken;
 
   LoginResponseModel({
     required this.user,

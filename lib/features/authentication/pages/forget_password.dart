@@ -1,7 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
+import 'package:note_app/features/authentication/pages/reset_password.dart';
+
+import '../models/reqpass_reset_request.dart';
+import '../state_management/reqpass_reset_cubit.dart';
 
 
 class ForgetPassword extends StatefulWidget {
@@ -23,6 +28,28 @@ class _ForgetPasswordState extends State<ForgetPassword> {
     final screenHeight = mediaQuery.size.height;
     final screenWidth = mediaQuery.size.width;
 
+    return BlocConsumer<ReqpassResetCubit, ReqpassResetState>(
+     listener: (context, state) {
+
+       if (state is ReqpassResetSuccess) {
+         print('Success state reached, navigating to the next screen');
+         Navigator.pushReplacement(
+           context,
+           MaterialPageRoute(
+             builder: (_) => ResetPassword(email: emailController.text),
+           ),
+         );
+       } else if (state is ReqpassResetError) {
+         ScaffoldMessenger.of(context).showSnackBar(
+           SnackBar(content: Text(state.error)),
+         );
+       }
+
+  },
+  builder: (context, state) {
+    if (state is ReqpassResetLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
     return Scaffold(
       body: Stack(
         children: [
@@ -57,7 +84,7 @@ class _ForgetPasswordState extends State<ForgetPassword> {
                             SizedBox(height: screenHeight * 0.05),
                             _buildSignUpButton(contentWidth),
                             // Error message display
-                            if (emailController.value !=0)
+                            if (emailController.text.isNotEmpty)
                               Text(
                                 emailController.text,
                                 style: TextStyle(color: Colors.red),
@@ -74,6 +101,8 @@ class _ForgetPasswordState extends State<ForgetPassword> {
         ],
       ),
     );
+  },
+);
   }
 
   Widget _buildHeader() {
@@ -176,6 +205,19 @@ class _ForgetPasswordState extends State<ForgetPassword> {
             ),
           ),
           onPressed: () {
+            if(emailController.text.isNotEmpty){
+              // Proceed with the login API call
+              final ReqpassResetRequeset = ReqpassResetRequesetModel(
+                email: emailController.text,
+              );
+              print('the request is :${ReqpassResetRequeset}');
+              context.read<ReqpassResetCubit>().requestPasswordReset(ReqpassResetRequeset);
+            }
+            else if(emailController.text.isEmpty){
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Email  can't be empty")),
+              );
+            }
 
           },
           child: Text('Reset Password', style: TextStyle(fontSize: 18, color: Colors.purple)),

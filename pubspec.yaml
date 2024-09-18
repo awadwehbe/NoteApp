@@ -43,6 +43,7 @@ dependencies:
   mockito:
   http_mock_adapter: ^0.6.1
   logging:
+  equatable:
 
 
   # The following adds the Cupertino Icons font to your application.

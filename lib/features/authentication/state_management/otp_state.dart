@@ -8,8 +8,8 @@ class SignUpInitial extends OtpState {}
 class SignUpLoading extends OtpState{}
 
 class OtpSuccess extends OtpState{
-  final OtpResponseModel  otpresponseModel;// Holds the response on success
-  OtpSuccess({required this.otpresponseModel});
+  final String message;
+  OtpSuccess({required this.message});
 
 }
 class OtpError extends OtpState {

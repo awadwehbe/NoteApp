@@ -26,12 +26,10 @@ class _OTPViewState extends State<OTPView> {
     final screenHeight = MediaQuery.of(context).size.height;
     final screenWidth = MediaQuery.of(context).size.width;
 
-    return BlocProvider(
-      create: (context) => OtpCubit(OtpRepository()),
-
-      child: BlocConsumer<OtpCubit, OtpState>(
+    return  BlocConsumer<OtpCubit, OtpState>(
         listener: (context, state) {
           if (state is OtpSuccess) {
+            print('navigating...');
             // Navigate to the next screen or show a success message
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -65,7 +63,7 @@ class _OTPViewState extends State<OTPView> {
             ),
           );
         },
-      ),
+
     );
   }
 

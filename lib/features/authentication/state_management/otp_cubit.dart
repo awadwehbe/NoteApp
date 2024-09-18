@@ -19,7 +19,7 @@ class OtpCubit extends Cubit<OtpState> {
       // Call the repository's sign-up method
       final response = await repository.Otpval( otpRequest);
       if (response.statusCode == 200) {
-        emit(OtpSuccess(otpresponseModel: response.data!));
+        emit(OtpSuccess(message: response.message));
       }
       else {
         emit(OtpError(errorMessage: response
