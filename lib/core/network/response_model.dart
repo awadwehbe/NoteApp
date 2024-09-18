@@ -22,6 +22,23 @@ class ResponseModel<T> {
           : json['data'] as T?,
     );
   }
+  /*
+   in api client we have:
+  ResponseModel responseModel = ResponseModel.fromJson(response.data);// so here we have only data
+  while in repository we have:
+  return ResponseModel<SignupResponseModel>.fromJson(
+      response.toJson(),
+        createData:(data) => SignupResponseModel.fromJson(data),
+    );
+    we invoke 2 parameters here isntead of 1 so the solution is to make the second parameter optional
+
+    This solution provides flexibility, allowing the method to be used with or without the createData parameter,
+    depending on whether or not it's needed to transform the data.
+
+    T Function(Map<String, dynamic>)? createData: This makes createData an optional parameter.
+If createData is provided, it will be used to transform the data field.
+If createData is not provided, the data will simply be cast as T without any transformation.
+   */
 
   /// Factory method to create a ResponseModel from JSON with required custom data parsing
   factory ResponseModel.fromJsonWithData(

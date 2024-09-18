@@ -1,6 +1,14 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get/get.dart';
+import 'package:note_app/features/authentication/pages/sign_up.dart';
+
+import '../models/login_request.dart';
+import '../state_management/login_cubit.dart';
+import 'forget_password.dart';
+import 'home.dart';
+import 'otp_view.dart';
 
 // Import the AuthController
 
@@ -15,7 +23,6 @@ class _LoginPageState extends State<LoginPage> {
   bool rememberMe = false;
   bool _isObscured = true;
 
-  // Inject LoginController instead of AuthController
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -25,55 +32,86 @@ class _LoginPageState extends State<LoginPage> {
     final mediaQuery = MediaQuery.of(context);
     final screenHeight = mediaQuery.size.height;
     final screenWidth = mediaQuery.size.width;
+    return BlocConsumer<LoginCubit, LoginState>(
+        listener: (context, state) {
+          if (state is LoginSuccess) {
+            final user = state.LoginresponseModel.user;
 
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Image.asset(
-              'assets/images/pw.webp',
-              fit: BoxFit.cover, // Ensures the image takes up the whole screen
-            ),
-          ),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                double widthFactor = constraints.maxWidth > 600 ? 0.4 : 0.9;
-                double contentWidth = screenWidth * widthFactor;
+            if (user == null || user.email == null || user.isVerified == null) {
+              print('Error: User or some user data is null');
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Invalid login response data')),
+              );
+              return;
+            }
 
-                return SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: screenHeight, // Ensures full-screen height
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.symmetric(
-                          horizontal: 20, vertical: screenHeight * 0.05),
-                      child: Center(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            SizedBox(height: screenHeight * 0.05),
-                            _buildHeader(),
-                            SizedBox(height: screenHeight * 0.03),
-                            _buildFields(context, contentWidth),
-                            SizedBox(height: screenHeight * 0.02),
-                            _buildRememberMeAndForgotPassword(context, contentWidth),
-                            SizedBox(height: screenHeight * 0.05),
-                            _buildLoginButton(contentWidth),
-                            SizedBox(height: screenHeight * 0.03),
-                            _buildLoginLink(contentWidth),
-                          ],
-                        ),
-                      ),
-                    ),
+            // Proceed with verified status
+            if (user.isVerified!) {
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => Home()));
+            } else {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => OTPView(email: user.email!),
+                ),
+              );
+            }
+          } else if (state is LoginError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.errorMessage)),
+            );
+          }
+        },
+
+
+        builder: (context, state) {
+        return Scaffold(
+          body: Container(
+            height: MediaQuery.of(context).size.height,  // Ensure it fills the entire height
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: Image.asset(
+                    'assets/images/pw.webp',
+                    fit: BoxFit.cover,
                   ),
-                );
-              },
+                ),
+                SafeArea(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      double widthFactor = constraints.maxWidth > 600 ? 0.4 : 0.9;
+                      double contentWidth = screenWidth * widthFactor;
+                      return SingleChildScrollView(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: MediaQuery.of(context).size.width * 0.05,
+                            vertical: MediaQuery.of(context).size.height * 0.02,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              SizedBox(height: screenHeight * 0.05),
+                              _buildHeader(),
+                              SizedBox(height: screenHeight * 0.03),
+                              _buildFields(context, contentWidth),
+                              SizedBox(height: screenHeight * 0.02),
+                              _buildRememberMeAndForgotPassword(context, contentWidth),
+                              SizedBox(height: screenHeight * 0.05),
+                              _buildLoginButton(contentWidth),
+                              SizedBox(height: screenHeight * 0.03),
+                              _buildLoginLink(contentWidth),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -180,7 +218,19 @@ class _LoginPageState extends State<LoginPage> {
           ),
           TextButton(
             onPressed: () {
+              final email = emailController.text.trim(); // Get the email from the input
+              //final e=loginController.login(email, password)
+              if (email.isNotEmpty) {
+                Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => ForgetPassword(email: email)));// Navigate with the email
+              } else {
+                const snackBar = SnackBar(
+                  content: Text('Enter your email'),
+                );
 
+                // Find the ScaffoldMessenger in the widget tree
+                // and use it to show a SnackBar.
+                ScaffoldMessenger.of(context).showSnackBar(snackBar);
+              }
             },
             child: Text(
               'Forgot password?',
@@ -195,9 +245,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget _buildLoginButton(double contentWidth) {
     return Container(
       width: contentWidth,
-      child: SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
+      child:  ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               padding: EdgeInsets.symmetric(vertical: 15),
@@ -207,14 +255,29 @@ class _LoginPageState extends State<LoginPage> {
             ),
             onPressed: () {
               // Trigger login function from LoginController
+              // Validate the fields before calling the login API
+              if (emailController.text.isEmpty || passwordController.text.isEmpty) {
+                // Show an error message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Email and password cannot be empty')),
+                );
+                return;
+              }
 
+              // Proceed with the login API call
+              final loginRequest = LoginRequestModel(
+                email: emailController.text,
+                password: passwordController.text,
+              );
+              print('the request is :${loginRequest}');
+              context.read<LoginCubit>().Login(loginRequest);
             },
             child: Text(
               'LOGIN',
               style: TextStyle(fontSize: 18, color: Colors.purple),
             ),
           ),
-        )
+
 
     );
   }
@@ -227,7 +290,10 @@ class _LoginPageState extends State<LoginPage> {
         children: [
           Text("Don't have an account?"),
           TextButton(
-            onPressed: () {},
+            onPressed: () {
+              //direct him to sign up page.
+              Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => RegistrationPage()));
+            },
             child: Text('Sign Up', style: TextStyle(color: Colors.purple)),
           ),
         ],

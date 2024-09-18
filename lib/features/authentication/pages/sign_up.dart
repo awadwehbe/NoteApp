@@ -154,6 +154,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       width: contentWidth,
       child: TextField(
         controller: controller,
+        style: TextStyle(color: Colors.white),
         decoration: InputDecoration(
           border: UnderlineInputBorder(),
           enabledBorder: UnderlineInputBorder(
@@ -173,6 +174,7 @@ class _RegistrationPageState extends State<RegistrationPage> {
       width: contentWidth,
       child: TextField(
         controller: controller,
+        style: TextStyle(color: Colors.white),
         obscureText: _isObscured,
         decoration: InputDecoration(
           border: UnderlineInputBorder(),
