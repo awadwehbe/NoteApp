@@ -38,12 +38,13 @@ dependencies:
   jwt_decoder: ^2.0.1
   get_storage: ^2.0.3
   hive:
-  path_provider:
+  path_provider: ^2.0.14
   logger:
   mockito:
   http_mock_adapter: ^0.6.1
   logging:
   equatable:
+  hive_flutter:
 
 
   # The following adds the Cupertino Icons font to your application.

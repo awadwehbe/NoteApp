@@ -22,43 +22,26 @@ class User {
 }
 
 class LoginResponseModel {
-  final User user;
   final String? accessToken;
   final String? refreshToken;
+  final DateTime? expiryTime; // Add this field if the expiry time is provided by the API
+  final User? user;
 
   LoginResponseModel({
-    required this.user,
-    required this.accessToken,
-    required this.refreshToken,
+    this.accessToken,
+    this.refreshToken,
+    this.expiryTime,
+    this.user,
   });
 
   factory LoginResponseModel.fromJson(Map<String, dynamic> json) {
     return LoginResponseModel(
-      user: User.fromJson(json['user']),
       accessToken: json['accessToken'],
       refreshToken: json['refreshToken'],
-    );
-  }
-}
-
-class LoginResponse {
-  final int statusCode;
-  final String message;
-  final LoginResponseModel? data;
-
-  LoginResponse({
-    required this.statusCode,
-    required this.message,
-    this.data,
-  });
-
-  factory LoginResponse.fromJson(Map<String, dynamic> json) {
-    return LoginResponse(
-      statusCode: json['statusCode'],
-      message: json['message'],
-      data: json['data'] != null
-          ? LoginResponseModel.fromJson(json['data'])
+      expiryTime: json.containsKey('expiryTime')
+          ? DateTime.parse(json['expiryTime']) // Assuming expiryTime is in a parseable format
           : null,
+      user: json['user'] != null ? User.fromJson(json['user']) : null,
     );
   }
 }

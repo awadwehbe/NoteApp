@@ -1,59 +1,102 @@
-import 'dart:io';
+  import 'dart:io';
 
 import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:path_provider/path_provider.dart';
 
-class SharedPrefsManager {
-  static const String _boxName = "preferences";
-  static const String _accessTokenKey = "access_token";
-  static const String _refreshTokenKey = "refresh_token";
+  import 'package:hive/hive.dart';
+  import 'package:path_provider/path_provider.dart';
+  import 'dart:io';
 
-  static Future<void> init() async {
-    // Initialize Hive and open the box for storing preferences
-    Directory appDir = await getApplicationDocumentsDirectory();
-    Hive.init(appDir.path);
-    await Hive.openBox(_boxName);
-  }
+  import 'package:hive_flutter/hive_flutter.dart';
 
-  /// Save access token
-  static Future<void> saveAccessToken(String token) async {
-    var box = Hive.box(_boxName);
-    await box.put(_accessTokenKey, token);
-  }
+  class SharedPrefsManager {
+    static const String _boxName = "preferences";
+    static const String _accessTokenKey = "access_token";
+    static const String _refreshTokenKey = "refresh_token";
+    static const String _tokenExpiryTimeKey = "token_expiry_time";
 
-  /// Get access token
-  static Future<String?> getAccessToken() async {
-    var box = Hive.box(_boxName);
-    return box.get(_accessTokenKey);
-  }
+    static Future<void> init() async {
+      await Hive.initFlutter();
+      if (!Hive.isBoxOpen(_boxName)) {
+        await Hive.openBox<String>(_boxName);
+      }
+    }
 
-  /// Remove access token
-  static Future<void> removeAccessToken() async {
-    var box = Hive.box(_boxName);
-    await box.delete(_accessTokenKey);
-  }
+    // Save access token
+    static Future<void> saveAccessToken(String token) async {
+      var box = await _getBox();
+      await box.put(_accessTokenKey, token);
+    }
 
-  /// Save refresh token
-  static Future<void> saveRefreshToken(String token) async {
-    var box = Hive.box(_boxName);
-    await box.put(_refreshTokenKey, token);
-  }
+    // Get access token
+    static Future<String?> getAccessToken() async {
+      var box = await _getBox();
+      return box.get(_accessTokenKey);
+    }
 
-  /// Get refresh token
-  static Future<String?> getRefreshToken() async {
-    var box = Hive.box(_boxName);
-    return box.get(_refreshTokenKey);
-  }
+    // Remove access token
+    static Future<void> removeAccessToken() async {
+      var box = await _getBox();
+      await box.delete(_accessTokenKey);
+    }
 
-  /// Remove refresh token
-  static Future<void> removeRefreshToken() async {
-    var box = Hive.box(_boxName);
-    await box.delete(_refreshTokenKey);
-  }
+    // Save refresh token
+    static Future<void> saveRefreshToken(String token) async {
+      var box = await _getBox();
+      await box.put(_refreshTokenKey, token);
+    }
 
-  /// Clear all stored data (for logout, etc.)
-  static Future<void> clearAll() async {
-    var box = Hive.box(_boxName);
-    await box.clear();
+    // Get refresh token
+    static Future<String?> getRefreshToken() async {
+      var box = await _getBox();
+      return box.get(_refreshTokenKey);
+    }
+
+    // Remove refresh token
+    static Future<void> removeRefreshToken() async {
+      var box = await _getBox();
+      await box.delete(_refreshTokenKey);
+    }
+
+    // Clear all stored data (for logout, etc.)
+    static Future<void> clearAll() async {
+      var box = await _getBox();
+      await box.clear();
+    }
+
+    // Store access token with expiry time
+    static Future<void> storeAccessToken(String accessToken, [Duration? validityDuration]) async {
+      var box = await _getBox();
+      DateTime expiryTime = DateTime.now().add(validityDuration ?? Duration(hours: 1)); // Default to 1 hour if no validityDuration is provided
+      await box.put(_accessTokenKey, accessToken);
+      await box.put(_tokenExpiryTimeKey, expiryTime.toIso8601String());
+    }
+
+    // Get token expiry time
+    static Future<DateTime?> getTokenExpiryTime() async {
+      var box = await _getBox();
+      String? expiryTimeString = box.get(_tokenExpiryTimeKey);
+      if (expiryTimeString != null) {
+        return DateTime.parse(expiryTimeString);
+      }
+      return null;
+    }
+
+    // Check if the token is expired
+    static Future<bool> isTokenExpired() async {
+      final expiryTime = await getTokenExpiryTime();
+      if (expiryTime != null) {
+        return DateTime.now().isAfter(expiryTime);
+      }
+      return true; // Assume expired if expiry time is not found
+    }
+
+    // Private method to get the box, ensuring it is open before accessing it
+    static Future<Box<String>> _getBox() async {
+      if (!Hive.isBoxOpen(_boxName)) {
+        return await Hive.openBox<String>(_boxName);
+      }
+      return Hive.box<String>(_boxName);
+    }
   }
-}
